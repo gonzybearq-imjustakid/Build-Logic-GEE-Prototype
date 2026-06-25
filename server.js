@@ -18,7 +18,7 @@ app.post('/', (req, res) => {
     lastReceivedData = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
     
     // Respond back to Build Logic so the transmitter registers a successful request
-    res.json({ value: "SUCCESS" });
+    res.json({ value: "11100101" });
 });
 
 // 2. A GET endpoint so you can check your data in a browser
