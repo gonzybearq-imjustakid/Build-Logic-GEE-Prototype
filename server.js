@@ -2,48 +2,36 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// FORCED PARSERS: This handles plain text, JSON, and URL encoded data format varieties
-app.use(express.json({ type: '*/*' })); // Forces Express to try parsing everything as JSON
+// Reverted to clean, safe standard parsers
+app.use(express.json()); 
 app.use(express.text());
 app.use(express.urlencoded({ extended: true }));
 
 let lastReceivedData = "No data received yet";
 
 app.post('/', (req, res) => {
-    // 1. CRITICAL DIAGNOSTIC LOGS: Check these in your Render dashboard logs!
-    console.log("--- NEW TRANSMISSION RECEIVED ---");
-    console.log("Raw Body Type:", typeof req.body);
-    console.log("Raw Body Content:", req.body);
+    console.log("--- NEW TRANSMISSION ---");
+    console.log("Body:", req.body);
 
-    let incomingBinary = "00000000"; 
+    let incomingBinary = "00000000";
 
-    // 2. Comprehensive parsing check
-    if (req.body) {
-        if (typeof req.body === 'object') {
-            // Check if the game sent it inside 'value' or directly as keys
-            incomingBinary = req.body.value || req.body.POST || "00000000";
-        } else if (typeof req.body === 'string') {
-            try {
-                // If it's a string, see if it's secretly stringified JSON
-                const parsed = JSON.parse(req.body);
-                incomingBinary = parsed.value || req.body;
-            } catch (e) {
-                // If it's pure raw text (e.g. just "10000000")
-                incomingBinary = req.body;
-            }
+    // Handle standard JSON objects cleanly
+    if (req.body && typeof req.body === 'object') {
+        incomingBinary = req.body.value || "00000000";
+    } 
+    // Handle raw string data if Express doesn't auto-convert it
+    else if (req.body && typeof req.body === 'string') {
+        try {
+            const parsed = JSON.parse(req.body);
+            incomingBinary = parsed.value || req.body;
+        } catch(e) {
+            incomingBinary = req.body;
         }
     }
 
-    // Clean up anything that isn't alphanumeric or clean binary text
-    if (typeof incomingBinary === 'object') {
-        incomingBinary = JSON.stringify(incomingBinary);
-    }
-
     lastReceivedData = incomingBinary;
-    console.log("Extracted Binary Sequence to Send Back:", incomingBinary);
-    console.log("---------------------------------");
     
-    // Respond back securely
+    // Respond back securely with the JSON format the game expects
     res.json({ value: String(incomingBinary) });
 });
 
