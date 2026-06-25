@@ -13,15 +13,28 @@ let lastReceivedData = "No data received yet";
 app.post('/', (req, res) => {
     console.log("Received data from Build Logic:", req.body);
     
-    // 1. Extract just the raw binary string (e.g., "10101010")
-    // If req.body is an object, get req.body.value. Otherwise, use req.body.
-    let incomingBinary = typeof req.body === 'object' ? req.body.value : req.body;
-    
-    // 2. Save it to your global variable
+    let incomingBinary = "00000000"; // Fallback default pattern
+
+    if (req.body) {
+        if (typeof req.body === 'object' && req.body.value) {
+            // If it's a perfectly parsed JSON object
+            incomingBinary = req.body.value;
+        } else if (typeof req.body === 'string') {
+            // If it's a raw string, try to clean it up
+            try {
+                const parsed = JSON.parse(req.body);
+                incomingBinary = parsed.value || req.body;
+            } catch (e) {
+                incomingBinary = req.body;
+            }
+        }
+    }
+
+    // Save it to your global variable for your GET endpoint
     lastReceivedData = incomingBinary;
     
-    // 3. Send just that binary string back to Roblox
-    res.json({ value: incomingBinary });
+    // Respond back with a guaranteed string so it NEVER sends nil
+    res.json({ value: String(incomingBinary) });
 });
 
 // 2. A GET endpoint so you can check your data in a browser
